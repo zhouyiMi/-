@@ -1,0 +1,204 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Nov 18 13:20:07 2024
+
+@author: Yiming.Zhou
+"""
+import pygame  
+import math  
+import random  
+
+# 初始化  
+pygame.init()  
+
+# 设置屏幕参数  
+SCREEN_WIDTH = 1000  
+SCREEN_HEIGHT = 800  
+SUN_RADIUS = 40  
+scale_factor=1
+# 行星数据  
+PLANETS = [  
+    {"name": "水星", "distance": 70, "radius": 3, "color": (169, 169, 169), "orbital_speed": 1.6, "moons": []},  
+    {"name": "金星", "distance": 100, "radius": 6, "color": (255, 228, 196), "orbital_speed": 1.2, "moons": []},  
+    {"name": "地球", "distance": 140, "radius": 6, "color": (0, 0, 255), "orbital_speed": 1.0,  
+     "moons": [{"name": "月球", "radius": 2, "color": (255, 255, 255), "distance": 15, "orbital_speed": 1.0}]},  
+    {"name": "火星", "distance": 240, "radius": 4, "color": (255, 0, 0), "orbital_speed": 0.8,  
+     "moons": [{"name": "火卫一", "radius": 2, "color": (255, 192, 203), "distance": 20, "orbital_speed": 0.5},  
+               {"name": "火卫二", "radius": 2, "color": (255, 182, 193), "distance": 30, "orbital_speed": 0.3}]},  
+    {"name": "木星", "distance": 300, "radius": 10, "color": (255, 165, 0), "orbital_speed": 0.4,  
+     "moons": [{"name": "木卫一", "radius": 4, "color": (210, 180, 140), "distance": 30, "orbital_speed": 0.7},  
+               {"name": "木卫二", "radius": 3, "color": (200, 200, 200), "distance": 45, "orbital_speed": 0.5}]},  
+    {"name": "土星", "distance": 350, "radius": 9, "color": (255, 215, 0), "orbital_speed": 0.3,  
+     "moons": [{"name": "土卫六", "radius": 3, "color": (255, 255, 240), "distance": 35, "orbital_speed": 0.6},  
+               {"name": "土卫七", "radius": 2, "color": (210, 105, 30), "distance": 45, "orbital_speed": 0.4},  
+               {"name": "土卫八", "radius": 1, "color": (173, 255, 47), "distance": 60, "orbital_speed": 0.3}]},  
+    {"name": "天王星", "distance": 400, "radius": 7, "color": (173, 216, 230), "orbital_speed": 0.2,  
+     "moons": [{"name": "天卫一", "radius": 3, "color": (176, 224, 230), "distance": 25, "orbital_speed": 0.5},  
+               {"name": "天卫二", "radius": 2, "color": (0, 139, 139), "distance": 40, "orbital_speed": 0.4}]},  
+    {"name": "海王星", "distance": 450, "radius": 6, "color": (70, 130, 180), "orbital_speed": 0.1,  
+     "moons": [{"name": "海卫一", "radius": 3, "color": (176, 224, 230), "distance": 30, "orbital_speed": 0.5}]}  
+]  
+
+# 彗星数据  
+COMETS = [  
+    {"name": "哈雷彗星", "distance": 600, "radius": 5, "color": (255, 255, 51), "orbital_speed": 0.5},  
+]  
+
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))  
+pygame.display.set_caption("行星系统模拟")  
+clock = pygame.time.Clock()  
+
+# 绘制太阳  
+def draw_sun():  
+    pygame.draw.circle(screen, (255, 255, 0), (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2), SUN_RADIUS* scale_factor)  
+
+# 绘制轨道  
+def draw_orbit(distance):  
+    pygame.draw.circle(screen, (255, 255, 255), (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2), distance, 1)  
+
+def draw_planet(planet, angle):  
+    """绘制行星和其卫星"""  
+    x = SCREEN_WIDTH // 2 + planet["distance"]* scale_factor * math.cos(angle)  
+    y = SCREEN_HEIGHT // 2 + planet["distance"]* scale_factor * math.sin(angle)  
+    pygame.draw.circle(screen, planet["color"], (int(x), int(y)), planet["radius"]* scale_factor)  
+    planet['position'] = (x, y)
+    font = pygame.font.SysFont("Microsoft YaHei", 10)   
+    text = font.render(planet['name'], True, (255, 255, 255))  
+    screen.blit(text, (int(x - planet["radius"]* scale_factor), int(y - planet["radius"] * scale_factor- 15)))
+    # 绘制卫星  
+    for moon in planet.get("moons", []):  
+        moon_angle = angle * moon["orbital_speed"] * 36  # 根据行星角度生成卫星的角度  
+        moon_x = x + moon["distance"] * scale_factor* math.cos(moon_angle)  # 卫星x坐标  
+        moon_y = y + moon["distance"] * scale_factor* math.sin(moon_angle)  # 卫星y坐标  
+        pygame.draw.circle(screen, moon["color"], (int(moon_x), int(moon_y)), moon["radius"]* scale_factor)  
+        moon['position'] = (moon_x, moon_y)
+        moon_text = font.render(moon['name'], True, (255, 255, 255))  
+        screen.blit(moon_text, (int(moon_x - moon["radius"]* scale_factor), int(moon_y - moon["radius"]* scale_factor - 15)))  
+
+# 绘制彗星  
+def draw_comet(comet, angle):  
+    x = SCREEN_WIDTH // 2 + comet["distance"] * scale_factor* math.cos(angle)  
+    y = SCREEN_HEIGHT // 2 + comet["distance"]* scale_factor * math.sin(angle)  
+    pygame.draw.circle(screen, comet["color"], (int(x), int(y)), comet["radius"]* scale_factor)  
+
+# 显示信息  
+def draw_info(info):  
+    font = pygame.font.SysFont("Microsoft YaHei", 36)  
+    text = font.render(info, True, (255, 255, 255))  
+    screen.blit(text, (20, 20))  # 在屏幕的左上角显示信息 
+    
+
+def main():  
+    angles = [0] * len(PLANETS)  # 初始化每个行星的角度  
+    comet_angles = [0] * len(COMETS)  # 初始化每个彗星的角度  
+
+    running = True  
+    is_paused = False  
+    selected_planet_info = ""  # 存储被点击的行星信息  
+    selected_moon_info = ""  # 存储被点击的卫星信息  
+    is_click=False
+    is_dragging = False 
+    global scale_factor 
+    zoom_step = 0.1  
+    while running:  
+        screen.fill((0, 0, 0))  
+        draw_sun()  # 绘制太阳  
+
+        # 绘制行星和它们的卫星  
+        for i, planet in enumerate(PLANETS):  
+            #draw_orbit(planet["distance"])  # 绘制行星轨道  
+            draw_planet(planet, angles[i])  # 绘制行星  
+            if not is_paused:  
+                angles[i] += planet["orbital_speed"] * 0.02  # 更新角度  
+
+        # 绘制彗星  
+        for i, comet in enumerate(COMETS):  
+            draw_comet(comet, comet_angles[i])  
+            if not is_paused:  
+                comet_angles[i] += comet["orbital_speed"]  
+
+        # 显示被点击的行星或卫星信息  
+        if selected_moon_info:  
+            draw_info(selected_moon_info)  
+
+        if selected_planet_info:  
+            draw_info(selected_planet_info)  
+        
+        # 处理事件  
+        for event in pygame.event.get():  
+            if event.type == pygame.QUIT:  
+                running = False  
+            elif event.type == pygame.KEYDOWN:  # 处理键盘事件  
+                if event.key == pygame.K_SPACE:  # 空格键暂停和恢复  
+                    is_paused = not is_paused  
+                elif event.key == pygame.K_UP:  # 向上箭头增加速度  
+                    for planet in PLANETS:  
+                        comet["orbital_speed"] *= 1.1 
+                        planet["orbital_speed"] *= 1.1  # 提高行星速度  
+                elif event.key == pygame.K_DOWN:  # 向下箭头降低速度  
+                    for planet in PLANETS:  
+                        comet["orbital_speed"] *= 0.9
+                        planet["orbital_speed"] *= 0.9  # 降低行星速度  
+                elif event.key == pygame.K_EQUALS or event.key == pygame.K_e:  # 加号键或'E'键缩放  
+                    scale_factor += zoom_step  
+                    print(scale_factor)
+                elif event.key == pygame.K_MINUS or event.key == pygame.K_q:  # 减号键或'Q'键缩放  
+                    scale_factor = max(0.1, scale_factor - zoom_step) 
+                    print(scale_factor)
+            elif event.type == pygame.MOUSEBUTTONDOWN:  # 鼠标点击事件  
+                is_click=False
+                mouse_x, mouse_y = event.pos  
+                selected_planet_info = ""  
+                selected_moon_info = ""  
+                is_dragging = False  # 重置拖动状态  
+                # 确定点击的行星  
+                for i, planet in enumerate(PLANETS):  
+                    planet_x = SCREEN_WIDTH // 2 + planet["distance"] * scale_factor* math.cos(angles[i])  
+                    planet_y = SCREEN_HEIGHT // 2 + planet["distance"]* scale_factor * math.sin(angles[i])  
+                    # 检测行星的点击  
+                    if (mouse_x - planet_x) ** 2 + (mouse_y - planet_y) ** 2 <= planet["radius"] ** 2:  
+                        selected_planet_info = f"{planet['name']} (距离: {planet['distance']}, 半径: {planet['radius']})"  
+                        dragged_planet_index = i  # 记录拖动的行星  
+                        is_dragging = True  
+                        is_click=True
+                        planet["color"]=(random.randint(0, 255)  ,random.randint(0, 255)  ,random.randint(0, 255)  )
+                        break  # 点击了行星，退出循环  
+                        # 检查点击卫星  
+                    for moon in planet.get("moons", []):  
+                        #moon_x, moon_y = moon['position']  # 直接使用已计算的卫星坐标  
+                        moon_angle = angles[i] * moon["orbital_speed"] * 36  # 根据行星角度生成卫星的角度  
+                        moon_x = planet_x + moon["distance"] * scale_factor* math.cos(moon_angle)  # 卫星x坐标  
+                        moon_y = planet_y + moon["distance"]* scale_factor * math.sin(moon_angle)  # 卫星y坐标  
+                        # 检查鼠标是否点击在卫星上  
+                        if (mouse_x - moon_x) ** 2 + (mouse_y - moon_y) ** 2 <= moon["radius"] ** 2:  
+                            selected_moon_info = f"{moon['name']} (半径: {moon['radius']})"  
+                            is_click=True
+                            moon["color"]=(random.randint(0, 255)  ,random.randint(0, 255)  ,random.randint(0, 255)  )
+                            break  # 找到卫星后跳出循环  
+                    if is_click:
+                        break
+                    else:
+                        selected_planet_info = ""  # 点击其他区域，清除信息  
+                        selected_moon_info = "" 
+                print(selected_moon_info)
+            elif event.type == pygame.MOUSEBUTTONUP:  
+                is_dragging = False  # 停止拖动  
+                dragged_planet_index = None  
+
+            elif event.type == pygame.MOUSEMOTION:  
+                if is_dragging and dragged_planet_index is not None:  
+                    # 获取鼠标位置并相对于中心来调整行星的位置  
+                    mouse_x, mouse_y = event.pos  
+                    center_x, center_y = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2  
+                    planet_x = (mouse_x - center_x)  
+                    planet_y = (mouse_y - center_y)  
+                    
+                    PLANETS[dragged_planet_index]["distance"] = math.sqrt(planet_x ** 2 + planet_y ** 2)  # 更新行星距离  
+            
+        pygame.display.flip()  # 更新屏幕      
+        clock.tick(60)  # 控制帧率  
+
+    pygame.quit()  
+
+if __name__ == "__main__":  
+    main()
